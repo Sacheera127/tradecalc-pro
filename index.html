@@ -1,0 +1,1643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Leverage & P&L Calculator</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230f1523'/%3E%3Crect x='8' y='8' width='48' height='48' rx='8' fill='%23131c2e' stroke='%231e2d47' stroke-width='1.5'/%3E%3Crect x='14' y='14' width='36' height='10' rx='3' fill='%232563eb' opacity='0.9'/%3E%3Ccircle cx='20' cy='34' r='3.5' fill='%2310b981'/%3E%3Ccircle cx='32' cy='34' r='3.5' fill='%2310b981'/%3E%3Ccircle cx='44' cy='34' r='3.5' fill='%23ef4444'/%3E%3Ccircle cx='20' cy='46' r='3.5' fill='%2310b981'/%3E%3Ccircle cx='32' cy='46' r='3.5' fill='%2310b981'/%3E%3Ccircle cx='44' cy='46' r='3.5' fill='%2310b981'/%3E%3C/svg%3E" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --bg-primary: #0a0e17;
+      --bg-secondary: #0f1523;
+      --bg-card: #131c2e;
+      --bg-card-hover: #162035;
+      --bg-input: #0d1626;
+      --border-color: #1e2d47;
+      --border-active: #2563eb;
+      --text-primary: #e2e8f0;
+      --text-secondary: #94a3b8;
+      --text-muted: #4a5568;
+      --green: #10b981;
+      --green-dim: #064e3b;
+      --red: #ef4444;
+      --red-dim: #7f1d1d;
+      --blue: #3b82f6;
+      --blue-dim: #1e3a5f;
+      --gold: #f59e0b;
+      --purple: #8b5cf6;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg-secondary); }
+    ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #2d4a6e; }
+
+    /* Grid background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(37,99,235,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(37,99,235,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .app-wrapper { position: relative; z-index: 1; }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, #0f1523 0%, #131c2e 100%);
+      border-bottom: 1px solid var(--border-color);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(12px);
+    }
+
+    .header-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+
+    .logo-text {
+      font-size: 18px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #60a5fa, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .header-badge {
+      font-size: 11px;
+      background: linear-gradient(135deg, rgba(16,185,129,0.2), rgba(16,185,129,0.1));
+      border: 1px solid rgba(16,185,129,0.3);
+      color: var(--green);
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    /* ── Sections ── */
+    .section { display: none; }
+    .section.active { display: block; }
+
+    /* ── Home Screen ── */
+    .home-hero {
+      text-align: center;
+      padding: 60px 24px 40px;
+    }
+
+    .home-title {
+      font-size: clamp(28px, 5vw, 48px);
+      font-weight: 800;
+      background: linear-gradient(135deg, #e2e8f0, #94a3b8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.2;
+      margin-bottom: 12px;
+    }
+
+    .home-subtitle {
+      color: var(--text-secondary);
+      font-size: 16px;
+      max-width: 480px;
+      margin: 0 auto 48px;
+    }
+
+    .home-cards {
+      display: flex;
+      gap: 24px;
+      justify-content: center;
+      flex-wrap: wrap;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 16px;
+    }
+
+    .home-card {
+      flex: 1;
+      min-width: 280px;
+      max-width: 380px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 36px 28px;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      text-align: left;
+    }
+
+    .home-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 0.3s;
+      border-radius: 20px;
+    }
+
+    .home-card.green::before {
+      background: radial-gradient(ellipse at top left, rgba(16,185,129,0.08) 0%, transparent 60%);
+    }
+
+    .home-card.blue::before {
+      background: radial-gradient(ellipse at top left, rgba(59,130,246,0.08) 0%, transparent 60%);
+    }
+
+    .home-card:hover { transform: translateY(-4px); border-color: #2d4a6e; }
+    .home-card:hover::before { opacity: 1; }
+    .home-card.green:hover { border-color: rgba(16,185,129,0.4); box-shadow: 0 20px 40px rgba(16,185,129,0.1); }
+    .home-card.blue:hover { border-color: rgba(59,130,246,0.4); box-shadow: 0 20px 40px rgba(59,130,246,0.1); }
+
+    .card-icon {
+      font-size: 40px;
+      margin-bottom: 16px;
+      display: block;
+    }
+
+    .card-title {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .home-card.green .card-title { color: var(--green); }
+    .home-card.blue .card-title { color: var(--blue); }
+
+    .card-desc {
+      color: var(--text-secondary);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .card-arrow {
+      margin-top: 20px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .home-card.green .card-arrow { color: var(--green); }
+    .home-card.blue .card-arrow { color: var(--blue); }
+
+    /* ── Stats bar ── */
+    .stats-bar {
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+      flex-wrap: wrap;
+      padding: 24px 24px 0;
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    .stat-item { text-align: center; }
+    .stat-value { font-size: 24px; font-weight: 700; color: var(--text-primary); }
+    .stat-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* ── Inner Layout ── */
+    .inner-layout {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px 16px;
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 20px;
+      align-items: start;
+    }
+
+    @media (max-width: 900px) {
+      .inner-layout { grid-template-columns: 1fr; }
+    }
+
+    /* ── Section Header ── */
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .back-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-card);
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .back-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-dim); }
+
+    .section-title {
+      font-size: 20px;
+      font-weight: 700;
+      flex: 1;
+    }
+
+    /* ── Cards / Panels ── */
+    .panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+
+    .panel-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .panel-title-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+    }
+
+    /* ── Form Inputs ── */
+    .input-group { margin-bottom: 16px; }
+
+    .input-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 6px;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-prefix, .input-suffix {
+      position: absolute;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-muted);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .input-prefix { left: 12px; }
+    .input-suffix { right: 12px; }
+
+    .form-input {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      color: var(--text-primary);
+      font-size: 16px;
+      font-weight: 600;
+      padding: 11px 36px;
+      transition: all 0.2s;
+      outline: none;
+      -moz-appearance: textfield;
+    }
+
+    .form-input::-webkit-outer-spin-button,
+    .form-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+    .form-input:focus {
+      border-color: var(--border-active);
+      background: #0f1e38;
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+    }
+
+    .form-input.no-prefix { padding-left: 14px; }
+    .form-input.no-suffix { padding-right: 14px; }
+
+    /* ── Leverage Buttons ── */
+    .leverage-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .lev-btn {
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid var(--border-color);
+      background: var(--bg-input);
+      color: var(--text-secondary);
+      transition: all 0.18s;
+      letter-spacing: 0.3px;
+      user-select: none;
+    }
+
+    .lev-btn:hover { border-color: var(--blue); color: var(--blue); background: rgba(59,130,246,0.08); }
+
+    .lev-btn.selected {
+      background: linear-gradient(135deg, rgba(37,99,235,0.25), rgba(59,130,246,0.15));
+      border-color: var(--blue);
+      color: #93c5fd;
+      box-shadow: 0 2px 8px rgba(37,99,235,0.2);
+    }
+
+    .lev-btn.custom-btn {
+      border-style: dashed;
+      border-color: rgba(139,92,246,0.4);
+      color: rgba(167,139,250,0.8);
+      background: rgba(139,92,246,0.06);
+      position: relative;
+    }
+
+    .lev-btn.custom-btn.selected {
+      background: linear-gradient(135deg, rgba(139,92,246,0.25), rgba(139,92,246,0.15));
+      border-color: var(--purple);
+      border-style: solid;
+      color: #c4b5fd;
+    }
+
+    .lev-btn.custom-btn .remove-custom {
+      display: none;
+      position: absolute;
+      top: -6px; right: -6px;
+      width: 16px; height: 16px;
+      background: var(--red);
+      border-radius: 50%;
+      font-size: 10px;
+      line-height: 16px;
+      text-align: center;
+      color: white;
+      cursor: pointer;
+    }
+
+    .lev-btn.custom-btn:hover .remove-custom { display: block; }
+
+    /* ── Custom input row ── */
+    .custom-input-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-top: 4px;
+    }
+
+    .custom-lev-input {
+      flex: 1;
+      background: var(--bg-input);
+      border: 1px dashed rgba(139,92,246,0.4);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 14px;
+      font-weight: 600;
+      padding: 8px 12px;
+      outline: none;
+      transition: all 0.2s;
+      -moz-appearance: textfield;
+    }
+
+    .custom-lev-input::-webkit-outer-spin-button,
+    .custom-lev-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+    .custom-lev-input:focus { border-color: var(--purple); box-shadow: 0 0 0 3px rgba(139,92,246,0.15); }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+      letter-spacing: 0.3px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #2563eb, #3b82f6);
+      color: white;
+      box-shadow: 0 4px 12px rgba(37,99,235,0.3);
+    }
+
+    .btn-primary:hover { background: linear-gradient(135deg, #1d4ed8, #2563eb); box-shadow: 0 6px 16px rgba(37,99,235,0.4); transform: translateY(-1px); }
+
+    .btn-purple {
+      background: linear-gradient(135deg, rgba(139,92,246,0.25), rgba(139,92,246,0.15));
+      color: #c4b5fd;
+      border: 1px solid rgba(139,92,246,0.4);
+    }
+
+    .btn-purple:hover { background: linear-gradient(135deg, rgba(139,92,246,0.4), rgba(139,92,246,0.25)); border-color: var(--purple); }
+
+    .btn-danger {
+      background: linear-gradient(135deg, rgba(239,68,68,0.15), rgba(239,68,68,0.08));
+      color: #fca5a5;
+      border: 1px solid rgba(239,68,68,0.3);
+    }
+
+    .btn-danger:hover { background: linear-gradient(135deg, rgba(239,68,68,0.25), rgba(239,68,68,0.15)); }
+
+    .btn-green {
+      background: linear-gradient(135deg, #059669, #10b981);
+      color: white;
+      box-shadow: 0 4px 12px rgba(16,185,129,0.3);
+    }
+
+    .btn-green:hover { background: linear-gradient(135deg, #047857, #059669); box-shadow: 0 6px 16px rgba(16,185,129,0.4); transform: translateY(-1px); }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--border-color);
+    }
+
+    .btn-ghost:hover { border-color: var(--blue); color: var(--blue); }
+
+    .btn-sm { padding: 7px 14px; font-size: 12px; border-radius: 8px; }
+
+    .btn-full { width: 100%; }
+
+    .action-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    /* ── Result Cards ── */
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 12px;
+    }
+
+    .result-card {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      transition: all 0.3s;
+      animation: cardIn 0.3s ease;
+    }
+
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(8px) scale(0.97); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .result-card.profit {
+      border-color: rgba(16,185,129,0.3);
+      background: linear-gradient(135deg, rgba(16,185,129,0.08), rgba(6,78,59,0.15));
+    }
+
+    .result-card.loss {
+      border-color: rgba(239,68,68,0.3);
+      background: linear-gradient(135deg, rgba(239,68,68,0.08), rgba(127,29,29,0.15));
+    }
+
+    .result-leverage {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .result-card.profit .result-leverage { color: rgba(16,185,129,0.7); }
+    .result-card.loss .result-leverage { color: rgba(239,68,68,0.7); }
+
+    .result-amount {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    .result-card.profit .result-amount { color: var(--green); }
+    .result-card.loss .result-amount { color: var(--red); }
+
+    .result-pct {
+      font-size: 12px;
+      margin-top: 4px;
+    }
+
+    .result-card.profit .result-pct { color: rgba(16,185,129,0.6); }
+    .result-card.loss .result-pct { color: rgba(239,68,68,0.6); }
+
+    /* Single big result */
+    .big-result {
+      text-align: center;
+      padding: 24px;
+      border-radius: 14px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-input);
+      animation: cardIn 0.3s ease;
+    }
+
+    .big-result.profit { border-color: rgba(16,185,129,0.35); background: linear-gradient(135deg, rgba(16,185,129,0.09), rgba(6,78,59,0.18)); }
+    .big-result.loss { border-color: rgba(239,68,68,0.35); background: linear-gradient(135deg, rgba(239,68,68,0.09), rgba(127,29,29,0.18)); }
+
+    .big-result-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-secondary); margin-bottom: 8px; }
+    .big-result-value { font-size: 44px; font-weight: 900; letter-spacing: -2px; }
+    .big-result.profit .big-result-value { color: var(--green); }
+    .big-result.loss .big-result-value { color: var(--red); }
+    .big-result-sub { font-size: 13px; color: var(--text-muted); margin-top: 6px; }
+
+    .empty-result {
+      text-align: center;
+      padding: 32px 16px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .empty-icon { font-size: 36px; margin-bottom: 8px; opacity: 0.5; }
+
+    /* ── History Panel ── */
+    .history-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      overflow: hidden;
+      position: sticky;
+      top: 80px;
+    }
+
+    .history-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-secondary);
+    }
+
+    .history-title-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .history-count {
+      background: rgba(37,99,235,0.2);
+      color: #93c5fd;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+
+    .history-list {
+      max-height: 520px;
+      overflow-y: auto;
+      padding: 8px;
+    }
+
+    .history-item {
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      margin-bottom: 6px;
+      cursor: pointer;
+      transition: all 0.18s;
+      position: relative;
+    }
+
+    .history-item:hover {
+      border-color: var(--border-active);
+      background: var(--bg-card-hover);
+    }
+
+    .history-item-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .history-type-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .badge-pnl { background: rgba(16,185,129,0.15); color: var(--green); border: 1px solid rgba(16,185,129,0.2); }
+    .badge-leverage { background: rgba(59,130,246,0.15); color: var(--blue); border: 1px solid rgba(59,130,246,0.2); }
+
+    .history-time {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .history-inputs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 6px;
+    }
+
+    .history-chip {
+      font-size: 11px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.06);
+      padding: 2px 8px;
+      border-radius: 6px;
+      color: var(--text-secondary);
+    }
+
+    .history-result {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .history-result.profit { color: var(--green); }
+    .history-result.loss { color: var(--red); }
+    .history-result.neutral { color: var(--blue); }
+
+    .history-load-btn {
+      position: absolute;
+      right: 10px;
+      bottom: 10px;
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 5px;
+      background: rgba(37,99,235,0.15);
+      border: 1px solid rgba(37,99,235,0.3);
+      color: #93c5fd;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.18s;
+    }
+
+    .history-item:hover .history-load-btn { opacity: 1; }
+
+    .history-empty {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    /* ── Tabs ── */
+    .tab-bar {
+      display: flex;
+      gap: 4px;
+      padding: 4px;
+      background: var(--bg-input);
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+
+    .tab {
+      flex: 1;
+      text-align: center;
+      padding: 8px 12px;
+      border-radius: 7px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: var(--text-secondary);
+    }
+
+    .tab.active {
+      background: var(--bg-card);
+      color: var(--text-primary);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    /* ── Notifications ── */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .toast {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      animation: toastIn 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 220px;
+    }
+
+    .toast.success { border-color: rgba(16,185,129,0.4); }
+    .toast.error { border-color: rgba(239,68,68,0.4); }
+    .toast.info { border-color: rgba(59,130,246,0.4); }
+
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateX(20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes toastOut {
+      from { opacity: 1; transform: translateX(0); }
+      to { opacity: 0; transform: translateX(20px); }
+    }
+
+    /* ── Divider ── */
+    .divider {
+      height: 1px;
+      background: var(--border-color);
+      margin: 16px 0;
+    }
+
+    /* ── Utility ── */
+    .text-green { color: var(--green); }
+    .text-red { color: var(--red); }
+    .text-blue { color: var(--blue); }
+    .text-gold { color: var(--gold); }
+    .text-muted { color: var(--text-muted); }
+    .text-secondary { color: var(--text-secondary); }
+
+    .flex-row { display: flex; align-items: center; gap: 8px; }
+    .flex-between { display: flex; align-items: center; justify-content: space-between; }
+
+    .mt-0 { margin-top: 0; }
+    .mt-2 { margin-top: 8px; }
+    .mt-3 { margin-top: 12px; }
+    .mt-4 { margin-top: 16px; }
+
+    /* Fade in */
+    .fade-in { animation: fadeIn 0.35s ease; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      .home-cards { gap: 16px; }
+      .home-card { padding: 24px 20px; }
+      .results-grid { grid-template-columns: repeat(2, 1fr); }
+      .action-row { flex-wrap: wrap; }
+      .big-result-value { font-size: 36px; }
+    }
+  </style>
+</head>
+<body>
+<div class="app-wrapper">
+
+  <!-- ══════════ HEADER ══════════ -->
+  <header class="header">
+    <div class="header-logo">
+      <div class="logo-icon">📊</div>
+      <span class="logo-text">TradeCalc Pro</span>
+    </div>
+    <div class="header-badge">LIVE</div>
+  </header>
+
+  <!-- ══════════ HOME SECTION ══════════ -->
+  <div id="section-home" class="section active">
+    <div class="home-hero fade-in">
+      <div class="home-title">Leverage & P&L Calculator</div>
+      <p class="home-subtitle">Professional trading calculator for precise profit/loss and leverage analysis. Fast, accurate, and built for traders.</p>
+
+      <div class="home-cards">
+        <div class="home-card green" onclick="showSection('pnl')">
+          <span class="card-icon">📈</span>
+          <div class="card-title">P&L Calculation</div>
+          <p class="card-desc">Calculate profit and loss across multiple leverages simultaneously. Multi-select leverage buttons, custom leverage values, and real-time results.</p>
+          <div class="card-arrow">
+            <span>Open Calculator</span>
+            <span>→</span>
+          </div>
+        </div>
+
+        <div class="home-card blue" onclick="showSection('leverage')">
+          <span class="card-icon">⚙️</span>
+          <div class="card-title">Leverage Calculation</div>
+          <p class="card-desc">Find the exact leverage required to hit your target profit or loss. Enter your target P&L, margin, and percentage to get the result instantly.</p>
+          <div class="card-arrow">
+            <span>Open Calculator</span>
+            <span>→</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-bar" id="home-stats">
+        <div class="stat-item">
+          <div class="stat-value" id="stat-total">0</div>
+          <div class="stat-label">Total Calculations</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value text-green" id="stat-pnl">0</div>
+          <div class="stat-label">P&L Calculations</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value text-blue" id="stat-lev">0</div>
+          <div class="stat-label">Leverage Calculations</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ P&L SECTION ══════════ -->
+  <div id="section-pnl" class="section">
+    <div class="inner-layout">
+
+      <!-- LEFT COLUMN -->
+      <div>
+        <!-- Header -->
+        <div class="section-header">
+          <button class="back-btn" onclick="showSection('home')">← Back to Home</button>
+          <div class="section-title">📈 P&amp;L Calculator</div>
+          <button class="btn btn-danger btn-sm" onclick="newCalculation()" title="Reset all fields">🔄 New Calc</button>
+        </div>
+
+        <!-- Inputs Panel -->
+        <div class="panel fade-in">
+          <div class="panel-title">
+            <div class="panel-title-dot" style="background:var(--green)"></div>
+            Calculation Inputs
+          </div>
+
+          <div class="input-group">
+            <div class="input-label"><span>Margin</span><span class="text-muted">Position Size</span></div>
+            <div class="input-wrapper">
+              <span class="input-prefix">$</span>
+              <input type="number" id="pnl-margin" class="form-input" placeholder="0.00" step="any" min="0" oninput="calcPnL()" />
+              <span class="input-suffix" style="color:transparent">%</span>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <div class="input-label"><span>Percentage</span><span class="text-muted">Market Move</span></div>
+            <div class="input-wrapper">
+              <span class="input-prefix" style="color:transparent">$</span>
+              <input type="number" id="pnl-percent" class="form-input" placeholder="0.00" step="any" oninput="calcPnL()" />
+              <span class="input-suffix">%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Leverage Selector -->
+        <div class="panel fade-in">
+          <div class="panel-title">
+            <div class="panel-title-dot" style="background:var(--blue)"></div>
+            Leverage Selector
+            <span style="font-size:11px;color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0">(multi-select)</span>
+          </div>
+
+          <div class="leverage-grid" id="default-lev-grid">
+            <!-- Default buttons injected by JS -->
+          </div>
+
+          <div id="custom-lev-container">
+            <div class="leverage-grid" id="custom-lev-grid">
+              <!-- Custom buttons injected by JS -->
+            </div>
+          </div>
+
+          <div class="divider" style="margin:12px 0"></div>
+
+          <div class="custom-input-row">
+            <input type="number" id="custom-lev-input" class="custom-lev-input" placeholder="e.g. 200" min="1" step="1"
+              onkeydown="if(event.key==='Enter') addCustomLeverage()" />
+            <button class="btn btn-purple btn-sm" onclick="addCustomLeverage()">+ Add Custom</button>
+          </div>
+
+          <div class="action-row mt-3">
+            <button class="btn btn-ghost btn-sm" onclick="selectAllLeverages()" style="flex:1">☑ Select All</button>
+            <button class="btn btn-ghost btn-sm" onclick="clearLeverageSelection()" style="flex:1">☐ Clear</button>
+          </div>
+        </div>
+
+        <!-- Results Panel -->
+        <div class="panel fade-in" id="pnl-results-panel">
+          <div class="panel-title flex-between">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div class="panel-title-dot" style="background:var(--gold)"></div>
+              Results
+            </div>
+            <span id="pnl-selected-count" style="font-size:11px;color:var(--text-muted)">0 leverages selected</span>
+          </div>
+          <div id="pnl-results">
+            <div class="empty-result">
+              <div class="empty-icon">📊</div>
+              <div>Select leverages and enter values above</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Calculate Button -->
+        <div class="action-row">
+          <button class="btn btn-green btn-full" onclick="calcAndSavePnL()">
+            ⚡ Calculate & Save to History
+          </button>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN: History -->
+      <div>
+        <div id="pnl-history-panel" class="history-panel">
+          <div class="history-header">
+            <div class="history-title-row">
+              <span style="font-size:14px;font-weight:700">History</span>
+              <span class="history-count" id="pnl-hist-count">0</span>
+            </div>
+            <button class="btn btn-danger btn-sm" onclick="clearHistory()" title="Clear all history">🗑 Clear</button>
+          </div>
+          <div class="history-list" id="pnl-history-list">
+            <div class="history-empty">
+              <div style="font-size:28px;margin-bottom:6px">🕐</div>
+              <div>No calculations yet</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════ LEVERAGE SECTION ══════════ -->
+  <div id="section-leverage" class="section">
+    <div class="inner-layout">
+
+      <!-- LEFT COLUMN -->
+      <div>
+        <!-- Header -->
+        <div class="section-header">
+          <button class="back-btn" onclick="showSection('home')">← Back to Home</button>
+          <div class="section-title">⚙️ Leverage Calculator</div>
+        </div>
+
+        <!-- Inputs Panel -->
+        <div class="panel fade-in">
+          <div class="panel-title">
+            <div class="panel-title-dot" style="background:var(--blue)"></div>
+            Calculation Inputs
+          </div>
+
+          <div class="input-group">
+            <div class="input-label"><span>Target P&L</span><span class="text-muted">Desired result</span></div>
+            <div class="input-wrapper">
+              <span class="input-prefix">$</span>
+              <input type="number" id="lev-pnl" class="form-input" placeholder="0.00" step="any" oninput="calcLeverage()" />
+              <span class="input-suffix" style="color:transparent">%</span>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <div class="input-label"><span>Margin</span><span class="text-muted">Position Size</span></div>
+            <div class="input-wrapper">
+              <span class="input-prefix">$</span>
+              <input type="number" id="lev-margin" class="form-input" placeholder="0.00" step="any" min="0" oninput="calcLeverage()" />
+              <span class="input-suffix" style="color:transparent">%</span>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <div class="input-label"><span>Percentage</span><span class="text-muted">Market Move</span></div>
+            <div class="input-wrapper">
+              <span class="input-prefix" style="color:transparent">$</span>
+              <input type="number" id="lev-percent" class="form-input" placeholder="0.00" step="any" oninput="calcLeverage()" />
+              <span class="input-suffix">%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Result Panel -->
+        <div class="panel fade-in">
+          <div class="panel-title">
+            <div class="panel-title-dot" style="background:var(--gold)"></div>
+            Result
+          </div>
+          <div id="lev-result">
+            <div class="empty-result">
+              <div class="empty-icon">⚙️</div>
+              <div>Enter values above to calculate required leverage</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Formula reminder -->
+        <div class="panel fade-in" style="background:rgba(37,99,235,0.05);border-color:rgba(37,99,235,0.2)">
+          <div class="panel-title">
+            <div class="panel-title-dot" style="background:var(--blue)"></div>
+            Formula Reference
+          </div>
+          <div style="font-size:13px;color:var(--text-secondary);line-height:1.7">
+            <div><span style="color:#93c5fd;font-weight:700">Leverage</span> = (P&L × 100) ÷ (Margin × Percentage)</div>
+            <div class="divider"></div>
+            <div><span style="color:#86efac;font-weight:700">P&L</span> = ((Percentage × Leverage) ÷ 100) × Margin</div>
+          </div>
+        </div>
+
+        <!-- Calculate Button -->
+        <div class="action-row">
+          <button class="btn btn-primary btn-full" onclick="calcAndSaveLeverage()">
+            ⚡ Calculate & Save to History
+          </button>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN: History -->
+      <div>
+        <div id="lev-history-panel" class="history-panel">
+          <div class="history-header">
+            <div class="history-title-row">
+              <span style="font-size:14px;font-weight:700">History</span>
+              <span class="history-count" id="lev-hist-count">0</span>
+            </div>
+            <button class="btn btn-danger btn-sm" onclick="clearHistory()" title="Clear all history">🗑 Clear</button>
+          </div>
+          <div class="history-list" id="lev-history-list">
+            <div class="history-empty">
+              <div style="font-size:28px;margin-bottom:6px">🕐</div>
+              <div>No calculations yet</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+/* ══════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════ */
+const DEFAULT_LEVERAGES = [5, 10, 15, 25, 50, 75, 100];
+
+let state = {
+  pnl: {
+    selectedLeverages: new Set(),
+    customLeverages: []
+  }
+};
+
+/* ══════════════════════════════════════════════
+   SECTION NAVIGATION
+══════════════════════════════════════════════ */
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById('section-' + id);
+  if (el) {
+    el.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  if (id === 'home') updateHomeStats();
+  if (id === 'pnl' || id === 'leverage') renderHistoryPanel(id);
+}
+
+/* ══════════════════════════════════════════════
+   LEVERAGE BUTTONS (P&L section)
+══════════════════════════════════════════════ */
+function renderDefaultLeverages() {
+  const grid = document.getElementById('default-lev-grid');
+  grid.innerHTML = '';
+  DEFAULT_LEVERAGES.forEach(lev => {
+    const btn = createLevBtn(lev, false);
+    grid.appendChild(btn);
+  });
+}
+
+function renderCustomLeverages() {
+  const grid = document.getElementById('custom-lev-grid');
+  grid.innerHTML = '';
+  state.pnl.customLeverages.forEach((lev, i) => {
+    const btn = createLevBtn(lev, true, i);
+    grid.appendChild(btn);
+  });
+}
+
+function createLevBtn(lev, isCustom, customIdx) {
+  const btn = document.createElement('div');
+  btn.className = 'lev-btn' + (isCustom ? ' custom-btn' : '');
+  if (state.pnl.selectedLeverages.has(lev)) btn.classList.add('selected');
+  btn.dataset.lev = lev;
+  btn.textContent = lev + 'x';
+  btn.onclick = () => toggleLeverage(lev);
+
+  if (isCustom) {
+    const rm = document.createElement('span');
+    rm.className = 'remove-custom';
+    rm.textContent = '×';
+    rm.onclick = (e) => {
+      e.stopPropagation();
+      removeCustomLeverage(customIdx);
+    };
+    btn.appendChild(rm);
+  }
+  return btn;
+}
+
+function toggleLeverage(lev) {
+  if (state.pnl.selectedLeverages.has(lev)) {
+    state.pnl.selectedLeverages.delete(lev);
+  } else {
+    state.pnl.selectedLeverages.add(lev);
+  }
+  updateLevBtnStates();
+  calcPnL();
+}
+
+function updateLevBtnStates() {
+  document.querySelectorAll('.lev-btn').forEach(btn => {
+    const lev = parseFloat(btn.dataset.lev);
+    if (state.pnl.selectedLeverages.has(lev)) {
+      btn.classList.add('selected');
+    } else {
+      btn.classList.remove('selected');
+    }
+  });
+  const count = state.pnl.selectedLeverages.size;
+  document.getElementById('pnl-selected-count').textContent = count + ' leverage' + (count !== 1 ? 's' : '') + ' selected';
+}
+
+function addCustomLeverage() {
+  const input = document.getElementById('custom-lev-input');
+  const val = parseFloat(input.value);
+  if (!val || val <= 0 || !Number.isFinite(val)) {
+    showToast('Enter a valid positive leverage value.', 'error');
+    return;
+  }
+  const allLev = [...DEFAULT_LEVERAGES, ...state.pnl.customLeverages];
+  if (allLev.includes(val)) {
+    showToast(val + 'x already exists.', 'error');
+    return;
+  }
+  state.pnl.customLeverages.push(val);
+  state.pnl.selectedLeverages.add(val);
+  renderCustomLeverages();
+  updateLevBtnStates();
+  calcPnL();
+  input.value = '';
+  showToast(val + 'x added and selected!', 'success');
+}
+
+function removeCustomLeverage(idx) {
+  const lev = state.pnl.customLeverages[idx];
+  state.pnl.customLeverages.splice(idx, 1);
+  state.pnl.selectedLeverages.delete(lev);
+  renderCustomLeverages();
+  updateLevBtnStates();
+  calcPnL();
+}
+
+function selectAllLeverages() {
+  [...DEFAULT_LEVERAGES, ...state.pnl.customLeverages].forEach(l => state.pnl.selectedLeverages.add(l));
+  updateLevBtnStates();
+  calcPnL();
+}
+
+function clearLeverageSelection() {
+  state.pnl.selectedLeverages.clear();
+  updateLevBtnStates();
+  calcPnL();
+}
+
+/* ══════════════════════════════════════════════
+   P&L CALCULATION
+══════════════════════════════════════════════ */
+function calcPnL() {
+  const margin = parseFloat(document.getElementById('pnl-margin').value);
+  const pct = parseFloat(document.getElementById('pnl-percent').value);
+  const selected = [...state.pnl.selectedLeverages].sort((a, b) => a - b);
+
+  const container = document.getElementById('pnl-results');
+
+  if (!selected.length) {
+    container.innerHTML = '<div class="empty-result"><div class="empty-icon">📊</div><div>Select at least one leverage</div></div>';
+    return;
+  }
+
+  if (!margin || !pct || isNaN(margin) || isNaN(pct)) {
+    container.innerHTML = '<div class="empty-result"><div class="empty-icon">📊</div><div>Enter margin and percentage above</div></div>';
+    return;
+  }
+
+  // Formula: P&L = ((percentage × leverage) / 100) × margin
+  const cards = selected.map(lev => {
+    const pnl = ((pct * lev) / 100) * margin;
+    const isProfit = pnl >= 0;
+    const sign = isProfit ? '+' : '';
+    const cls = isProfit ? 'profit' : 'loss';
+    const effectivePct = (pct * lev).toFixed(2);
+    return `
+      <div class="result-card ${cls}">
+        <div class="result-leverage">${lev}x Leverage</div>
+        <div class="result-amount">${sign}$${formatNum(Math.abs(pnl))}</div>
+        <div class="result-pct">${sign}${effectivePct}% effective</div>
+      </div>
+    `;
+  }).join('');
+
+  container.innerHTML = '<div class="results-grid">' + cards + '</div>';
+}
+
+function calcAndSavePnL() {
+  const margin = parseFloat(document.getElementById('pnl-margin').value);
+  const pct = parseFloat(document.getElementById('pnl-percent').value);
+  const selected = [...state.pnl.selectedLeverages].sort((a, b) => a - b);
+
+  if (!margin || !pct || isNaN(margin) || isNaN(pct)) {
+    showToast('Please enter valid Margin and Percentage.', 'error');
+    return;
+  }
+  if (!selected.length) {
+    showToast('Select at least one leverage.', 'error');
+    return;
+  }
+
+  const results = selected.map(lev => ({
+    leverage: lev,
+    pnl: ((pct * lev) / 100) * margin
+  }));
+
+  const entry = {
+    id: Date.now(),
+    type: 'pnl',
+    ts: new Date().toISOString(),
+    inputs: { margin, percentage: pct, leverages: selected },
+    results
+  };
+
+  saveHistoryEntry(entry);
+  renderHistoryPanel('pnl');
+  renderHistoryPanel('leverage');
+  updateHomeStats();
+  showToast('Saved to history ✓', 'success');
+}
+
+/* ══════════════════════════════════════════════
+   LEVERAGE CALCULATION
+══════════════════════════════════════════════ */
+function calcLeverage() {
+  const pnl = parseFloat(document.getElementById('lev-pnl').value);
+  const margin = parseFloat(document.getElementById('lev-margin').value);
+  const pct = parseFloat(document.getElementById('lev-percent').value);
+  const container = document.getElementById('lev-result');
+
+  if (!pnl || !margin || !pct || isNaN(pnl) || isNaN(margin) || isNaN(pct)) {
+    container.innerHTML = '<div class="empty-result"><div class="empty-icon">⚙️</div><div>Enter all values above to calculate</div></div>';
+    return;
+  }
+  if (margin === 0 || pct === 0) {
+    container.innerHTML = '<div class="empty-result"><div class="empty-icon">⚠️</div><div>Margin and Percentage cannot be zero</div></div>';
+    return;
+  }
+
+  // Formula: leverage = (P&L × 100) / (margin × percentage)
+  const leverage = (pnl * 100) / (margin * pct);
+  const isPositive = leverage >= 0;
+  const cls = isPositive ? 'profit' : 'loss';
+  const sign = isPositive ? '' : '';
+
+  container.innerHTML = `
+    <div class="big-result ${cls}">
+      <div class="big-result-label">Required Leverage</div>
+      <div class="big-result-value">${formatNum(Math.abs(leverage), 2)}x</div>
+      <div class="big-result-sub">For $${formatNum(Math.abs(pnl))} ${pnl >= 0 ? 'profit' : 'loss'} on $${formatNum(margin)} at ${pct}%</div>
+    </div>
+  `;
+}
+
+function calcAndSaveLeverage() {
+  const pnl = parseFloat(document.getElementById('lev-pnl').value);
+  const margin = parseFloat(document.getElementById('lev-margin').value);
+  const pct = parseFloat(document.getElementById('lev-percent').value);
+
+  if (!pnl || !margin || !pct || isNaN(pnl) || isNaN(margin) || isNaN(pct)) {
+    showToast('Please fill in all fields.', 'error');
+    return;
+  }
+  if (margin === 0 || pct === 0) {
+    showToast('Margin and Percentage cannot be zero.', 'error');
+    return;
+  }
+
+  const leverage = (pnl * 100) / (margin * pct);
+
+  const entry = {
+    id: Date.now(),
+    type: 'leverage',
+    ts: new Date().toISOString(),
+    inputs: { targetPnl: pnl, margin, percentage: pct },
+    result: leverage
+  };
+
+  saveHistoryEntry(entry);
+  renderHistoryPanel('pnl');
+  renderHistoryPanel('leverage');
+  updateHomeStats();
+  showToast('Saved to history ✓', 'success');
+  calcLeverage(); // refresh display
+}
+
+/* ══════════════════════════════════════════════
+   NEW CALCULATION (reset)
+══════════════════════════════════════════════ */
+function newCalculation() {
+  // Reset inputs
+  document.getElementById('pnl-margin').value = '';
+  document.getElementById('pnl-percent').value = '';
+  document.getElementById('custom-lev-input').value = '';
+
+  // Clear custom leverages
+  state.pnl.customLeverages = [];
+  state.pnl.selectedLeverages.clear();
+
+  // Re-render
+  renderCustomLeverages();
+  updateLevBtnStates();
+
+  // Clear results
+  document.getElementById('pnl-results').innerHTML =
+    '<div class="empty-result"><div class="empty-icon">📊</div><div>Select leverages and enter values above</div></div>';
+
+  showToast('New calculation started.', 'info');
+}
+
+/* ══════════════════════════════════════════════
+   HISTORY (localStorage)
+══════════════════════════════════════════════ */
+const HISTORY_KEY = 'tradecalc_history_v2';
+
+function loadHistory() {
+  try {
+    return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+  } catch { return []; }
+}
+
+function saveHistoryEntry(entry) {
+  const history = loadHistory();
+  history.unshift(entry); // newest first
+  // Keep last 200
+  if (history.length > 200) history.pop();
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+}
+
+function clearHistory() {
+  if (!confirm('Clear all calculation history? This cannot be undone.')) return;
+  localStorage.removeItem(HISTORY_KEY);
+  renderHistoryPanel('pnl');
+  renderHistoryPanel('leverage');
+  updateHomeStats();
+  showToast('History cleared.', 'info');
+}
+
+function formatTimestamp(iso) {
+  const d = new Date(iso);
+  const now = new Date();
+  const diffMs = now - d;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHrs = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return diffMins + 'm ago';
+  if (diffHrs < 24) return diffHrs + 'h ago';
+  if (diffDays < 7) return diffDays + 'd ago';
+  return d.toLocaleDateString();
+}
+
+function renderHistoryPanel(section) {
+  const history = loadHistory();
+  const listId = section === 'pnl' ? 'pnl-history-list' : 'lev-history-list';
+  const countId = section === 'pnl' ? 'pnl-hist-count' : 'lev-hist-count';
+  const list = document.getElementById(listId);
+  const countEl = document.getElementById(countId);
+
+  if (!list) return;
+  countEl.textContent = history.length;
+
+  if (!history.length) {
+    list.innerHTML = '<div class="history-empty"><div style="font-size:28px;margin-bottom:6px">🕐</div><div>No calculations yet</div></div>';
+    return;
+  }
+
+  list.innerHTML = history.map((entry, idx) => {
+    if (entry.type === 'pnl') {
+      return renderPnLHistoryItem(entry, section);
+    } else {
+      return renderLeverageHistoryItem(entry, section);
+    }
+  }).join('');
+}
+
+function renderPnLHistoryItem(entry, section) {
+  const { inputs, results, ts, id } = entry;
+  const totalPnL = results.reduce((sum, r) => sum + r.pnl, 0);
+  const isProfit = totalPnL >= 0;
+  const previewResults = results.slice(0, 3).map(r => {
+    const sign = r.pnl >= 0 ? '+' : '';
+    return `${r.leverage}x: ${sign}$${formatNum(Math.abs(r.pnl))}`;
+  }).join(' · ');
+
+  return `
+    <div class="history-item" onclick="loadHistoryItem('${id}', '${section}')">
+      <div class="history-item-header">
+        <span class="history-type-badge badge-pnl">P&L</span>
+        <span class="history-time">${formatTimestamp(ts)}</span>
+      </div>
+      <div class="history-inputs">
+        <span class="history-chip">$${formatNum(inputs.margin)} margin</span>
+        <span class="history-chip">${inputs.percentage}%</span>
+        <span class="history-chip">${inputs.leverages.length} leverage${inputs.leverages.length !== 1 ? 's' : ''}</span>
+      </div>
+      <div class="history-result ${isProfit ? 'profit' : 'loss'}" style="font-size:12px">${previewResults}${results.length > 3 ? ' …' : ''}</div>
+      <span class="history-load-btn">Load →</span>
+    </div>
+  `;
+}
+
+function renderLeverageHistoryItem(entry, section) {
+  const { inputs, result, ts, id } = entry;
+  const isPositive = result >= 0;
+
+  return `
+    <div class="history-item" onclick="loadHistoryItem('${id}', '${section}')">
+      <div class="history-item-header">
+        <span class="history-type-badge badge-leverage">LEVERAGE</span>
+        <span class="history-time">${formatTimestamp(ts)}</span>
+      </div>
+      <div class="history-inputs">
+        <span class="history-chip">$${formatNum(Math.abs(inputs.targetPnl))} P&L</span>
+        <span class="history-chip">$${formatNum(inputs.margin)} margin</span>
+        <span class="history-chip">${inputs.percentage}%</span>
+      </div>
+      <div class="history-result neutral">${formatNum(Math.abs(result), 2)}x required</div>
+      <span class="history-load-btn">Load →</span>
+    </div>
+  `;
+}
+
+function loadHistoryItem(id, currentSection) {
+  const history = loadHistory();
+  const entry = history.find(e => String(e.id) === String(id));
+  if (!entry) return;
+
+  if (currentSection === 'pnl') {
+    // Load into P&L section
+    if (entry.type === 'pnl') {
+      document.getElementById('pnl-margin').value = entry.inputs.margin;
+      document.getElementById('pnl-percent').value = entry.inputs.percentage;
+
+      // Restore leverages
+      state.pnl.selectedLeverages.clear();
+
+      // Separate default and custom
+      const customToAdd = entry.inputs.leverages.filter(l => !DEFAULT_LEVERAGES.includes(l));
+      state.pnl.customLeverages = [...new Set([...state.pnl.customLeverages, ...customToAdd])];
+
+      entry.inputs.leverages.forEach(l => state.pnl.selectedLeverages.add(l));
+      renderCustomLeverages();
+      updateLevBtnStates();
+      calcPnL();
+    } else {
+      // Leverage history → load into P&L (populate margin and percentage)
+      document.getElementById('pnl-margin').value = entry.inputs.margin;
+      document.getElementById('pnl-percent').value = entry.inputs.percentage;
+      calcPnL();
+    }
+  } else {
+    // Load into Leverage section
+    if (entry.type === 'leverage') {
+      document.getElementById('lev-pnl').value = entry.inputs.targetPnl;
+      document.getElementById('lev-margin').value = entry.inputs.margin;
+      document.getElementById('lev-percent').value = entry.inputs.percentage;
+      calcLeverage();
+    } else {
+      // P&L history → load into Leverage section (populate margin and percentage; use first result as targetPnl)
+      document.getElementById('lev-margin').value = entry.inputs.margin;
+      document.getElementById('lev-percent').value = entry.inputs.percentage;
+      if (entry.results && entry.results.length) {
+        document.getElementById('lev-pnl').value = entry.results[0].pnl.toFixed(4);
+      }
+      calcLeverage();
+    }
+  }
+
+  showToast('Loaded into calculator ✓', 'info');
+}
+
+/* ══════════════════════════════════════════════
+   HOME STATS
+══════════════════════════════════════════════ */
+function updateHomeStats() {
+  const history = loadHistory();
+  const pnlCount = history.filter(e => e.type === 'pnl').length;
+  const levCount = history.filter(e => e.type === 'leverage').length;
+  document.getElementById('stat-total').textContent = history.length;
+  document.getElementById('stat-pnl').textContent = pnlCount;
+  document.getElementById('stat-lev').textContent = levCount;
+}
+
+/* ══════════════════════════════════════════════
+   TOAST NOTIFICATIONS
+══════════════════════════════════════════════ */
+function showToast(msg, type = 'info') {
+  const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = 'toast ' + type;
+  toast.innerHTML = `<span>${icons[type] || 'ℹ️'}</span><span>${msg}</span>`;
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.animation = 'toastOut 0.3s ease forwards';
+    setTimeout(() => toast.remove(), 300);
+  }, 2500);
+}
+
+/* ══════════════════════════════════════════════
+   UTILITIES
+══════════════════════════════════════════════ */
+function formatNum(n, decimals = 2) {
+  if (isNaN(n) || !isFinite(n)) return '0.00';
+  if (Math.abs(n) >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+  if (Math.abs(n) >= 1e3) {
+    // Format with commas
+    return n.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+  }
+  return n.toFixed(decimals);
+}
+
+/* ══════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════ */
+function init() {
+  renderDefaultLeverages();
+  renderCustomLeverages();
+  updateHomeStats();
+  // Render history panels for both sections on load
+  renderHistoryPanel('pnl');
+  renderHistoryPanel('leverage');
+}
+
+init();
+</script>
+</body>
+</html>
